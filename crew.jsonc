@@ -1,0 +1,94 @@
+{
+  // Display name for this crew
+  "name": "valutatore",
+
+  // Agents to include — each must have a matching agents/<name>.jsonc file
+  "agents": ["reader", "researcher", "market"],
+
+  // Task definitions — executed in order for sequential process
+  "tasks": [
+    {
+      // Extracts mechanics, core features and lore from the pitch.
+      // valutatore.callbacks.load_pitch attaches the PDF at {pitch_path} as the file 'pitch'.
+      "name": "extract_pitch_task",
+      "description": "Read the attached pitch document (file 'pitch') in full, then extract its distinctive elements using only what the document states:\n1. Game mechanics: how the system works (game system, character progression, combat).\n2. Core features: what the pitch presents as distinctive or gives most weight to (what makes the game stand out).\n3. Lore: the story and setting of the game.\nGive more weight to what the document emphasizes. Do not invent or add elements that are not present. You may group or summarize, but do not infer. If an item is not indicated in the pitch, write \"not specified\" and list it under \"gaps\".\nAlso write a short search_summary: genre, tone, setting and what makes the game distinctive, with 5-8 keywords useful for finding similar games. The search_summary follows the same rule: if the pitch does not state the tone, write \"tone: not specified\" and do not characterize it or compare it to other games.",
+      "expected_output": "The pitch's title, a one-line description, genre, core features, mechanics and lore (each item with a source_ref), a search_summary and the list of gaps, all taken only from the document.",
+      "output_pydantic": { "python": "valutatore.models.PitchExtraction" },
+      "agent": "reader",
+
+      // Optional task guardrail(s) validate output before completion
+      // "guardrail": "Every factual claim needs context support.",
+      // "guardrail_max_retries": 2,
+      // Docs: https://docs.crewai.com/concepts/tasks
+    },
+    {
+      // Finds up to 5 published tabletop RPGs similar to the pitch, each confirmed on a source page.
+      "name": "search_similar_games_task",
+      "description": "Using the pitch extraction from the previous task, find published tabletop role-playing games (not video games) that are similar to the pitch.\nSearch with the search tool in this order, moving on only when a step finds too few games:\n1. The keywords in search_summary.\n2. Combinations of core_features and mechanics.\n3. genre together with the setting described in lore.\nA game counts as similar only if it shares at least 2 elements with the pitch, and at least one of them is a core feature or a mechanic; genre or lore alone are not enough, and neither are elements every RPG has (player characters, dice, a game master). Tag each shared element with the list it comes from in the pitch extraction (core_feature, mechanic or lore). Exclude the pitched game itself.\nBefore listing a game, open its page with the scraping tool and confirm the game exists and has the shared elements. Use that page as the source, not the search snippet. Prefer official, publisher or store pages. Take the publisher only as a page names it: when a page names both an author and a publisher, report the publisher; report the creator only when the page says the game is self-published; if no page you opened names it, write \"not specified\".\nReturn at most 5 games, ordered from most to least similar. For each shared element, name the matching item from the pitch extraction and say how the game implements it, as the source states. Record every query you ran. If you find fewer than 5 games, or none, say why in notes; never invent a game, a publisher or a feature.",
+      "expected_output": "Up to 5 real tabletop RPGs similar to the pitch, ordered by similarity, each with title, publisher (or 'not specified' when no source page names it), a description of at most 200 characters, at least 2 shared elements mapped to items of the pitch extraction, and the URL of the page that confirms them; plus the queries run and notes explaining any shortfall.",
+      "output_pydantic": { "python": "valutatore.models.SimilarGamesResult" },
+      "agent": "researcher",
+    },
+    {
+      // Judges the pitch's market position from the two previous outputs and writes the report.
+      "name": "market_analysis",
+      "description": "Using the pitch information from extract_pitch_task and the similar games from search_similar_games_task, assess the game's potential success and its position in the market. Base the assessment on the data you received: this task asks you to reason over it and build an analysis, not to collect new data.\nThe report must contain exactly three sections, each introduced by a Markdown heading with this exact title: \"## Unique elements\", \"## Competitors\", \"## Target\". The order of the sections does not matter, but none may be missing or renamed.\nBuild the analysis from these inputs:\n1. The data extracted by extract_pitch_task: core features, mechanics, lore, genre and gaps.\n2. The data extracted by search_similar_games_task: each game, its publisher and the elements it shares with the pitch.\nThen cover the three sections as follows:\n- Unique elements: the core features, mechanics and lore elements that none of the similar games share, or that the pitch combines in a way none of them does.\n- Competitors: what the similar games have in common with each other and with the pitch, and where the pitch differs.\n- Target: who the target audience is, based on the elements above.\nThe analysis must make clear who the target audience is, who the main competitors are and what makes the game unique.\nEnd every statement with its basis: \"(data: <task name>, <item>)\" when the previous outputs state it, or \"(inference)\" when it is your reasoning over them. Name only competitors listed by search_similar_games_task, and describe their systems and formats only with what that task's output states about them; if it says nothing about an aspect, do not describe it.\nThe data has no sales, crowdfunding, player-count or market-trend figures: do not state any, and do not call a segment growing, large, niche or underserved or say a fanbase exists. Judge the potential success only by how the game's unique elements and the shared elements position it against the listed competitors, marked as inference. When the pitch extraction lists gaps, say how they limit the assessment.",
+      "expected_output": "A markdown report of about 1000 words with the analysis, organized in these sections:\n- Unique elements: the features that make the game unique.\n- Competitors: a summary of the main competitors and what they have in common.\n- Target: the characteristics of the users interested in the game.",
+      "context": ["extract_pitch_task", "search_similar_games_task"],
+      "markdown": true,
+      "output_file": "output/market_analysis.md",
+      "agent": "market",
+    },
+  ],
+
+  // Execution process
+  // "sequential" — tasks run in order, each receiving prior task outputs
+  // "hierarchical" — a manager agent delegates tasks (requires manager_llm)
+  "process": "sequential",
+
+  // Enable verbose logging during execution
+  "verbose": true,
+
+  // Crew memory stays off: it persists across runs and would mix earlier pitches into a new evaluation
+  "memory": false,
+
+  // Automatically plan the execution strategy before running tasks
+  // "planning": false,
+
+  // LLM for the planning step (used when planning is true)
+  // "planning_llm": "openai/gpt-4o",
+
+  // LLM for the manager agent (required when process is "hierarchical")
+  // "manager_llm": "openai/gpt-4o",
+
+  // Crew-level LLM fields also accept object form for custom endpoints
+  // "chat_llm": {"model": "llama3", "provider": "ollama", "base_url": "http://localhost:11434"},
+
+  // Advanced crew options:
+  // Docs: https://docs.crewai.com/concepts/crews
+  // For hierarchical crews, manager_agent can reference an agents/<name>.jsonc file
+  // that is not included in the "agents" list.
+  // "manager_agent": "researcher",
+  // "after_kickoff_callbacks": [{"python": "my_project.callbacks.after_kickoff"}],
+  // "function_calling_llm": "openai/gpt-4o-mini",
+  // "max_rpm": null,
+  // "cache": true,
+  // "knowledge_sources": [],
+  // "embedder": {},
+  // "output_log_file": "crew.log",
+  // "stream": false,
+  // "tracing": false,
+  // "security_config": {},
+
+  // Optional runtime input defaults.
+  // Use {placeholder} in agent or task text, for example:
+  // "description": "Research {topic} and write a brief"
+  // `crewai run` prompts for any placeholders missing from this object.
+  "inputs": {
+    // Path of the pitch PDF to evaluate
+    "pitch_path": "file/Pitch.pdf",
+  },
+
+  // Attaches the PDF at {pitch_path} to the crew before the tasks start
+  "before_kickoff_callbacks": [{ "python": "valutatore.callbacks.load_pitch" }],
+}
