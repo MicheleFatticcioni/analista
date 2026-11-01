@@ -4271,10 +4271,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "crewai", extra = ["file-processing", "tools"] },
+    { name = "pypdf" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "crewai", extras = ["tools", "file-processing"], specifier = ">=1.15.30,<2.0.0" }]
+requires-dist = [
+    { name = "crewai", extras = ["tools", "file-processing"], specifier = ">=1.15.30,<2.0.0" },
+    { name = "pypdf", specifier = ">=6.21.2" },
+]
 
 [[package]]
 name = "watchfiles"
