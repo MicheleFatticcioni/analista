@@ -6,3 +6,4 @@ report.md
 .venv/
 /file/*
 /output/*
+eval.jsonc
