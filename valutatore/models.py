@@ -5,35 +5,29 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 
-class PitchItem(BaseModel):
-    name: str = Field(description="Short name of the element")
-    description: str = Field(description="What the pitch says about it, without inference")
-    source_ref: str = Field(
-        description=(
-            "Section heading where the item appears; if the document has no clear "
-            "sections, a short verbatim excerpt (max 10 words)"
-        )
+class CoreMechanic(BaseModel):
+    name: str = Field(description="Short name of the mechanic")
+    description: str = Field(max_length=200, description="What the mechanic does, max 200 characters")
+    inferred: bool = Field(
+        description="False if the pitch states it; True if you interpreted it from the text"
     )
 
 
 class PitchExtraction(BaseModel):
     title: str = Field(description="Game title, or 'not specified'")
-    description: str = Field(max_length=200, description="One-line description of the game, max 200 characters")
-    genre: str = Field(description="Genre, or 'not specified'")
-    core_features: list[PitchItem] = Field(
-        description="What the pitch presents as distinctive or gives most weight to"
+    description: str = Field(max_length=200, description="One-line description of the game")
+    core_mechanics: list[CoreMechanic] = Field(
+        description="The mechanics and features that set this game apart"
     )
-    mechanics: list[PitchItem] = Field(
-        description="How the system works: game system, character progression, combat"
+    system: str = Field(
+        description="Game system (e.g. Year Zero Engine, d20 System, PbtA), or 'not specified'"
     )
-    lore: list[PitchItem] = Field(description="Story and setting of the game")
-    search_summary: str = Field(
-        description=(
-            "Genre, tone, setting and what makes the game distinctive, "
-            "with 5-8 keywords useful for finding similar games"
-        )
+    system_inferred: bool = Field(
+        description="True if the pitch does not name the system and you deduced it from the text"
     )
-    gaps: list[str] = Field(description="Items the pitch does not specify")
+    lore: str = Field(max_length=200, description="Setting of the game, max 200 characters")
+    lang: str = Field(description="Language of the pitch as ISO 639-1 code (e.g. 'it', 'en')")
+
 
 class SharedFeature(BaseModel):
     pitch_element: str = Field(description="Name of the matching item in the pitch extraction")

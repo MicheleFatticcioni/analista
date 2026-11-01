@@ -11,8 +11,8 @@
       // Extracts mechanics, core features and lore from the pitch.
       // valutatore.callbacks.load_pitch attaches the PDF at {pitch_path} as the file 'pitch'.
       "name": "extract_pitch_task",
-      "description": "Read the attached pitch document (file 'pitch') in full, then extract its distinctive elements using only what the document states:\n1. Game mechanics: how the system works (game system, character progression, combat).\n2. Core features: what the pitch presents as distinctive or gives most weight to (what makes the game stand out).\n3. Lore: the story and setting of the game.\nGive more weight to what the document emphasizes. Do not invent or add elements that are not present. You may group or summarize, but do not infer. If an item is not indicated in the pitch, write \"not specified\" and list it under \"gaps\".\nAlso write a short search_summary: genre, tone, setting and what makes the game distinctive, with 5-8 keywords useful for finding similar games. The search_summary follows the same rule: if the pitch does not state the tone, write \"tone: not specified\" and do not characterize it or compare it to other games.",
-      "expected_output": "The pitch's title, a one-line description, genre, core features, mechanics and lore (each item with a source_ref), a search_summary and the list of gaps, all taken only from the document.",
+      "description": "Read the attached pitch document (file 'pitch') in full. Its text, extracted from the PDF, is:\n<<<\n{pitch_text}\n>>>\n A pitch is a short, persuasive presentation of a role-playing game: your job is to extract what makes this game distinctive.\nExtract:\n1. title and a one-line description of the game.\n2. core_mechanics: the mechanics and features that set this game apart, weighing what the pitch emphasizes. Do not list what every RPG has (player characters, dice, a game master, a setting).\n3. system: the game system (e.g. Year Zero Engine, d20 System, PbtA). If the pitch names it, set system_inferred=false. If it does not but the text clearly points to one, write it and set system_inferred=true. If there is no indication, write \"not specified\" and system_inferred=false.\n4. lore: the setting, in at most 200 characters.\n5. lang: the language the pitch is written in, as an ISO 639-1 code.\nStay close to the text. Inference is allowed but must be minimal: mark inferred=true on any core mechanic the pitch implies without stating, and use it only when the document clearly supports it. Never add elements with no basis in the document.",
+      "expected_output": "The pitch's title, a one-line description, core_mechanics (each with a description and an inferred flag), system with its inferred flag, lore and lang, all grounded in the document.",
       "output_pydantic": { "python": "valutatore.models.PitchExtraction" },
       "agent": "reader",
 
@@ -87,6 +87,8 @@
   "inputs": {
     // Path of the pitch PDF to evaluate
     "pitch_path": "file/Pitch.pdf",
+    // Filled by load_pitch with the text extracted from the PDF
+    "pitch_text": "",
   },
 
   // Attaches the PDF at {pitch_path} to the crew before the tasks start
